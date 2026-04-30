@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nudgr — Reminders That Meet You Halfway</title>
+  <meta name="description" content="The only app that reminds you halfway through your journey — not just when you arrive." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #1a7a5e;
+      --green-mid: #229970;
+      --green-light: #2dbd8a;
+      --green-pale: #e8f7f2;
+      --green-glow: rgba(45, 189, 138, 0.18);
+      --dark: #0d1f18;
+      --text: #f2faf6;
+      --muted: rgba(242,250,246,0.55);
+      --border: rgba(255,255,255,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE TEXTURE ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 200px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ── GLOW ORBS ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(26,122,94,0.35) 0%, transparent 70%); top: -200px; right: -150px; }
+    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(45,189,138,0.15) 0%, transparent 70%); bottom: 10%; left: -100px; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(20px);
+      background: rgba(13,31,24,0.6);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    .nav-logo span {
+      font-family: 'Fraunces', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--green-light);
+      color: var(--dark);
+      text-decoration: none;
+      padding: 9px 20px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(45,189,138,0.3); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(45,189,138,0.12);
+      border: 1px solid rgba(45,189,138,0.25);
+      color: var(--green-light);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--green-light);
+      border-radius: 50%;
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      font-weight: 700;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      max-width: 820px;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--green-light);
+    }
+
+    .hero-sub {
+      margin-top: 24px;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.7;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+
+    .hero-actions {
+      margin-top: 40px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--green-light);
+      color: var(--dark);
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 100px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(45,189,138,0.35); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .btn-secondary:hover { color: var(--text); }
+
+    /* App Store badge SVG inline */
+    .appstore-btn {
+      display: inline-block;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .appstore-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+    .appstore-btn img { height: 44px; }
+
+    /* ── MOCKUP / ROUTE VISUAL ── */
+    .route-visual {
+      margin-top: 64px;
+      position: relative;
+      width: min(440px, 90vw);
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+
+    .route-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .route-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(45,189,138,0.4), transparent);
+    }
+
+    .route-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .route-line {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+
+    .route-stop {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stop-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .stop-dot.origin { background: var(--muted); border: 2px solid var(--muted); }
+    .stop-dot.milestone {
+      background: var(--green-light);
+      box-shadow: 0 0 12px rgba(45,189,138,0.6);
+      animation: glow-pulse 2s ease infinite;
+    }
+    .stop-dot.dest { background: var(--green); border: 2px solid var(--green-light); }
+
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(45,189,138,0.5); }
+      50% { box-shadow: 0 0 20px rgba(45,189,138,0.9); }
+    }
+
+    .stop-connector {
+      width: 2px;
+      height: 32px;
+      background: linear-gradient(to bottom, var(--border), rgba(45,189,138,0.3));
+      margin-left: 5px;
+    }
+
+    .stop-info { flex: 1; }
+    .stop-name { font-size: 0.9rem; font-weight: 500; }
+    .stop-detail { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    .nudge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(45,189,138,0.15);
+      border: 1px solid rgba(45,189,138,0.3);
+      color: var(--green-light);
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .nudge-pill::before {
+      content: '🔔';
+      font-size: 0.7rem;
+    }
+
+    /* ── SECTION SHARED ── */
+    section {
+      position: relative;
+      z-index: 1;
+      padding: 100px 24px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-tag {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--green-light);
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 540px;
+      font-size: 1rem;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .steps {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2px;
+    }
+
+    .step {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+
+    .step:first-child { border-radius: 20px 0 0 20px; }
+    .step:last-child { border-radius: 0 20px 20px 0; }
+
+    @media (max-width: 700px) {
+      .step:first-child { border-radius: 20px 20px 0 0; }
+      .step:last-child { border-radius: 0 0 20px 20px; }
+    }
+
+    .step:hover { background: rgba(45,189,138,0.06); }
+
+    .step-num {
+      font-family: 'Fraunces', serif;
+      font-size: 3rem;
+      font-weight: 700;
+      color: rgba(45,189,138,0.15);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      margin-top: 56px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      transition: border-color 0.3s, background 0.3s, transform 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(45,189,138,0.3);
+      background: rgba(45,189,138,0.05);
+      transform: translateY(-3px);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(45,189,138,0.12);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 0.95rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── DIVIDER LINE ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0 auto;
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      text-align: center;
+    }
+
+    .cta-section .section-title { margin-bottom: 24px; }
+    .cta-section .section-desc { margin: 0 auto 40px; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 32px 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .footer-logo img {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      opacity: 0.7;
+    }
+
+    .footer-logo span {
+      font-family: 'Fraunces', serif;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <img src="icon.png" alt="Nudgr icon" />
+      <span>Nudgr</span>
+    </a>
+    <a href="https://apps.apple.com/us/app/nudgr/id6761961206" class="nav-cta" target="_blank">
+      Download Free
+    </a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">Now on the App Store</div>
+
+    <h1>Reminders that meet you<br /><em>halfway.</em></h1>
+
+    <p class="hero-sub">
+      Most reminder apps notify you when you've already arrived. By then, it's too late.
+      Nudgr nudges you at 50% and 75% of your journey — so you always have time to act.
+    </p>
+
+    <div class="hero-actions">
+      <a href="https://apps.apple.com/us/app/nudgr/id6761961206" class="appstore-btn" target="_blank">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" />
+      </a>
+    </div>
+
+    <!-- Route Visual -->
+    <div class="route-visual">
+      <div class="route-card">
+        <div class="route-label">Active Journey — Home → Office</div>
+        <div class="route-line">
+          <div class="route-stop">
+            <div class="stop-dot origin"></div>
+            <div class="stop-info">
+              <div class="stop-name">Home</div>
+              <div class="stop-detail">Departed 8:14 AM</div>
+            </div>
+          </div>
+          <div class="stop-connector"></div>
+          <div class="route-stop">
+            <div class="stop-dot milestone"></div>
+            <div class="stop-info">
+              <div class="stop-name">50% milestone</div>
+              <div class="stop-detail">Nudge sent · 4 min ago</div>
+            </div>
+            <div class="nudge-pill">Nudge sent</div>
+          </div>
+          <div class="stop-connector"></div>
+          <div class="route-stop">
+            <div class="stop-dot dest"></div>
+            <div class="stop-info">
+              <div class="stop-name">Office</div>
+              <div class="stop-detail">ETA 8:41 AM · 6 min away</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">How it works</div>
+        <h2 class="section-title">Set it. Travel.<br />We'll remind you when it matters.</h2>
+        <p class="section-desc">No account needed. Open the app, create a reminder, and go. Nudgr does the rest in the background.</p>
+      </div>
+
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h3>Set a route</h3>
+          <p>Pick any origin and destination. Name your reminder and choose which milestones to alert at.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h3>Start your journey</h3>
+          <p>Nudgr tracks your progress silently in the background — even when the app is closed.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h3>Get nudged</h3>
+          <p>Receive alerts at 25%, 50%, 75%, and on arrival. Act before it's too late.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">Features</div>
+        <h2 class="section-title">Everything you need.<br />Nothing you don't.</h2>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">🗺️</div>
+          <h3>Route Map Preview</h3>
+          <p>See a live map of your route with milestone markers plotted along the way.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">📍</div>
+          <h3>Live Journey Tracking</h3>
+          <p>Tap any active reminder to see real-time progress, distance remaining, and ETA.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🔁</div>
+          <h3>Recurring Reminders</h3>
+          <p>Set reminders to repeat on specific days — perfect for commutes and regular trips.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">↗️</div>
+          <h3>Share Extension</h3>
+          <p>Create reminders directly from Notes, Messages, WhatsApp, and any sharing app.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🌙</div>
+          <h3>Light & Dark Mode</h3>
+          <p>Automatically adapts to your device appearance. Looks great either way.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🔔</div>
+          <h3>Milestone Alerts</h3>
+          <p>Toggle 25%, 50%, 75% and arrival alerts individually per reminder.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container reveal">
+      <div class="section-tag">Free to download</div>
+      <h2 class="section-title">Ready to stop arriving<br /><em style="color:var(--green-light)">too late?</em></h2>
+      <p class="section-desc">Nudgr is free on the App Store. No account, no setup — just open and go.</p>
+      <a href="https://apps.apple.com/us/app/nudgr/id6761961206" class="appstore-btn" target="_blank">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" />
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <a href="#" class="footer-logo">
+      <img src="icon.png" alt="Nudgr" />
+      <span>Nudgr</span>
+    </a>
+    <div class="footer-links">
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="mailto:support@nudgr.app">Support</a>
+      <a href="https://apps.apple.com/us/app/nudgr/id6761961206" target="_blank">App Store</a>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          // stagger children
+          e.target.querySelectorAll('.feature-card, .step').forEach((el, i) => {
+            el.style.transitionDelay = `${i * 0.08}s`;
+            el.classList.add('reveal', 'visible');
+          });
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
